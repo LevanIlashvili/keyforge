@@ -87,7 +87,7 @@ keyforge-win.exe
 
 #### From Source
 ```bash
-git clone <repository-url>
+git clone https://github.com/LevanIlashvili/keyforge
 cd keyforge
 npm install
 npm start
