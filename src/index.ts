@@ -12,22 +12,36 @@ import * as ecc_btc from 'tiny-secp256k1';
 
 const ECPair = ECPairFactory(ecc_btc);
 
-type Network = 'bitcoin' | 'ethereum' | 'libre' | 'solana';
+type Network = 'bitcoin' | 'ethereum' | 'libre' | 'solana' | 'dogecoin';
 
 interface NetworkConfig {
     name: Network;
     path: string;
     chainId: number;
     isEVM: boolean;
-    protocol?: 'bitcoin' | 'evm' | 'eos' | 'solana';
+    protocol?: 'bitcoin' | 'evm' | 'eos' | 'solana' | 'dogecoin';
 }
 
 const NETWORK_CONFIGS: NetworkConfig[] = [
     { name: 'bitcoin', path: "m/44'/0'/0'/0/0", chainId: 0, isEVM: false, protocol: 'bitcoin' },
     { name: 'libre', path: "m/44'/194'/0'/0/0", chainId: 0, isEVM: false, protocol: 'eos' },
     { name: 'ethereum', path: "m/44'/60'/0'/0/0", chainId: 1, isEVM: true, protocol: 'evm' },
-    { name: 'solana', path: "m/44'/501'/0'/0'", chainId: 0, isEVM: false, protocol: 'solana' }
+    { name: 'solana', path: "m/44'/501'/0'/0'", chainId: 0, isEVM: false, protocol: 'solana' },
+    { name: 'dogecoin', path: "m/44'/3'/0'/0/0", chainId: 0, isEVM: false, protocol: 'dogecoin' },
 ];
+
+// Add Dogecoin network parameters
+const DOGECOIN_NETWORK = {
+    messagePrefix: '\x19Dogecoin Signed Message:\n',
+    bech32: 'dc',
+    bip32: {
+        public: 0x02facafd,
+        private: 0x02fac398
+    },
+    pubKeyHash: 0x1e,
+    scriptHash: 0x16,
+    wif: 0x9e
+};
 
 interface BitcoinAddresses {
     legacy: string;
@@ -86,12 +100,36 @@ async function generateEOSKeys(seed: Buffer): Promise<{ privateKey: string; publ
     };
 }
 
+async function generateDogecoinKeys(seed: Buffer): Promise<{ 
+    privateKey: string; 
+    publicKey: string;
+    address: string;
+    wif: string;
+}> {
+    const hash = crypto.createHash('sha256').update(seed).digest();
+    const keyPair = ECPair.fromPrivateKey(Buffer.from(hash), { network: DOGECOIN_NETWORK });
+    
+    const { address } = bitcoin.payments.p2pkh({ 
+        pubkey: Buffer.from(keyPair.publicKey),
+        network: DOGECOIN_NETWORK
+    });
+
+    return {
+        privateKey: hash.toString('hex'),
+        publicKey: Buffer.from(keyPair.publicKey).toString('hex'),
+        wif: keyPair.toWIF(),
+        address: address!
+    };
+}
+
 async function generateKeys(mnemonic: string, network: NetworkConfig): Promise<any> {
     const seed = mnemonicToSeedSync(mnemonic);
 
     switch (network.protocol) {
         case 'bitcoin':
             return generateBitcoinKeys(seed);
+        case 'dogecoin':
+            return generateDogecoinKeys(seed);
         case 'evm':
             return Wallet.fromPhrase(mnemonic);
         case 'eos':
@@ -121,6 +159,13 @@ async function displayWalletInfo(wallet: any, network: NetworkConfig, mnemonic: 
         console.log(chalk.yellow('Legacy:       '), chalk.white(wallet.addresses.legacy));
         console.log(chalk.yellow('SegWit:       '), chalk.white(wallet.addresses.segwit));
         console.log(chalk.yellow('Native SegWit:'), chalk.white(wallet.addresses.nativeSegwit));
+    } else if (network.protocol === 'dogecoin') {
+        console.log(chalk.yellow('Private Key:  '), chalk.white(wallet.privateKey));
+        console.log(chalk.yellow('WIF:          '), chalk.white(wallet.wif));
+        console.log(chalk.yellow('Public Key:   '), chalk.white(wallet.publicKey));
+        console.log(chalk.green('-'.repeat(50)));
+        console.log(chalk.magenta('Dogecoin Address:'));
+        console.log(chalk.yellow('Address:      '), chalk.white(wallet.address));
     } else if (network.isEVM) {
         console.log(chalk.yellow('Address:      '), chalk.white(wallet.address));
         console.log(chalk.yellow('Private Key:  '), chalk.white(wallet.privateKey));

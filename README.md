@@ -16,6 +16,7 @@ A powerful multi-chain crypto wallet forge - craft your keys with precision. Gen
 - 🔐 Generate new mnemonics or use existing ones
 - 🌐 Multi-chain support:
   - Bitcoin (Legacy, SegWit, and Native SegWit addresses)
+  - Dogecoin (Legacy addresses)
   - Ethereum (and other EVM chains)
   - Solana
   - Libre (EOS-based)
@@ -105,6 +106,7 @@ This will create executables for all platforms in the `bin` directory.
 
 3. Select your target network:
    - Bitcoin
+   - Dogecoin
    - Ethereum
    - Solana
    - Libre
@@ -121,6 +123,10 @@ This will create executables for all platforms in the `bin` directory.
 - Legacy Address (P2PKH)
 - SegWit Address (P2SH-P2WPKH)
 - Native SegWit Address (P2WPKH)
+- WIF Format Private Keys
+
+### Dogecoin
+- Legacy Address (P2PKH)
 - WIF Format Private Keys
 
 ### Ethereum

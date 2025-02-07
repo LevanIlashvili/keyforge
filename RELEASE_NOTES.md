@@ -12,6 +12,11 @@
     - SegWit (P2SH-P2WPKH)
     - Native SegWit (P2WPKH) addresses
     - WIF format private keys
+  - Dogecoin
+    - Legacy (P2PKH)
+    - SegWit (P2SH-P2WPKH)
+    - Native SegWit (P2WPKH) addresses
+    - WIF format private keys
   - Ethereum
     - Standard addresses
     - Full EVM compatibility
