@@ -9,6 +9,10 @@ import { derivePath } from 'ed25519-hd-key';
 import * as bitcoin from 'bitcoinjs-lib';
 import { ECPairFactory } from 'ecpair';
 import * as ecc_btc from 'tiny-secp256k1';
+import { PromptService } from './ui/prompts';
+import { DisplayService } from './ui/display';
+import { MnemonicService } from './services/mnemonic';
+import { generateKeys } from './services/crypto';
 
 const ECPair = ECPairFactory(ecc_btc);
 
@@ -122,25 +126,6 @@ async function generateDogecoinKeys(seed: Buffer): Promise<{
     };
 }
 
-async function generateKeys(mnemonic: string, network: NetworkConfig): Promise<any> {
-    const seed = mnemonicToSeedSync(mnemonic);
-
-    switch (network.protocol) {
-        case 'bitcoin':
-            return generateBitcoinKeys(seed);
-        case 'dogecoin':
-            return generateDogecoinKeys(seed);
-        case 'evm':
-            return Wallet.fromPhrase(mnemonic);
-        case 'eos':
-            return generateEOSKeys(seed);
-        case 'solana':
-            return generateSolanaKeys(seed, network.path);
-        default:
-            throw new Error(`Unsupported protocol: ${network.protocol}`);
-    }
-}
-
 async function displayWalletInfo(wallet: any, network: NetworkConfig, mnemonic: string) {
     console.log('\n' + chalk.green('='.repeat(50)));
     console.log(chalk.blue(`Wallet Info for ${network.name.toUpperCase()}`));
@@ -179,77 +164,44 @@ async function displayWalletInfo(wallet: any, network: NetworkConfig, mnemonic: 
 }
 
 async function main() {
-    console.clear();
-    console.log(chalk.bold.rgb(255, 136, 0)('\n🌟 Welcome to KeyForge 🌟\n'));
-    
-        const { mode } = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'mode',
-                message: '🎯 What would you like to do?',
-                choices: [
-                    { name: '🆕 Generate new mnemonic and keys', value: 'generate' },
-                    { name: '📝 Use existing mnemonic', value: 'existing' }
-                ]
-            }
-        ]);
+    try {
+        console.clear();
+        console.log(chalk.blue('🔨 Welcome to KeyForge - Crypto Wallet Generator 🔨\n'));
 
-        let mnemonic: string;
-        if (mode === 'generate') {
-            mnemonic = generateMnemonic();
-            console.log(chalk.green('\n✨ Generated New Mnemonic:'));
-            console.log(chalk.yellow(mnemonic) + '\n');
+        const { mode } = await PromptService.getMnemonicChoice();
+        const mnemonic = mode === 'generate' 
+            ? MnemonicService.generate()
+            : await PromptService.getExistingMnemonic();
+
+        const network = await PromptService.getNetwork();
+        
+        // Generate wallet
+        console.log(chalk.cyan('\n⚙️  Generating wallet...'));
+        const wallet = await generateKeys(mnemonic, network);
+
+        // Display results
+        await DisplayService.showWalletInfo(wallet, network, mnemonic);
+
+        // Ask to continue
+        const again = await PromptService.askToContinue();
+        if (again) {
+            await main();
         } else {
-            const response = await inquirer.prompt([
-                {
-                    type: 'input',
-                    name: 'mnemonic',
-                    message: '🔑 Enter your mnemonic phrase:',
-                    validate: (input: string) => {
-                        if (!validateMnemonic(input)) {
-                            return '❌ Invalid mnemonic phrase. Please check and try again.';
-                        }
-                        return true;
-                    }
-                }
-            ]);
-            mnemonic = response.mnemonic;
+            console.log(chalk.green('\n👋 Thank you for using KeyForge!\n'));
         }
-
-        const { network } = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'network',
-                message: '🌐 Select the network:',
-                choices: NETWORK_CONFIGS.map(net => ({
-                    name: net.name.charAt(0).toUpperCase() + net.name.slice(1),
-                    value: net
-                }))
-            }
-        ]);
-
-        try {
-            console.log(chalk.blue('\n⚙️  Generating keys...\n'));
-            const wallet = await generateKeys(mnemonic, network);
-            await displayWalletInfo(wallet, network, mnemonic);
-        } catch (error) {
-            console.error(chalk.red('❌ Error generating keys:'), error);
-        }
-
-        const { again } = await inquirer.prompt([
-            {
-                type: 'confirm',
-                name: 'again',
-                message: 'Would you like to generate more keys?',
-                default: false
-            }
-        ]);
-
-    if (again) {
-        await main();
-    } else {
-        process.exit(0);
+    } catch (error) {
+        console.error(chalk.red('\n❌ Error:'), error instanceof Error ? error.message : 'Unknown error occurred');
+        console.log(chalk.yellow('Please try again or report this issue if it persists.\n'));
+        process.exit(1);
     }
 }
 
-main().catch(console.error); 
+// Start the application
+if (require.main === module) {
+    main().catch((error) => {
+        console.error(chalk.red('Fatal error:'), error);
+        process.exit(1);
+    });
+}
+
+export { generateKeys }; 
