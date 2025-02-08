@@ -12,7 +12,7 @@
 - Implemented BIP44 path for Dogecoin (m/44'/3'/0'/0/0)
 - Added WIF private key support for Dogecoin
 
-## Version 1.0.0 (2024-03-07)
+## Version 1.0.0 (2025-02-08)
 
 🎉 Initial release of KeyForge - A powerful multi-chain crypto wallet generator with a beautiful CLI interface.
 
