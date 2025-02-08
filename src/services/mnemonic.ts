@@ -1,8 +1,11 @@
 import { generateMnemonic, validateMnemonic, mnemonicToSeedSync } from 'bip39';
+import chalk from 'chalk';
 
 export class MnemonicService {
     static generate(): string {
-        return generateMnemonic();
+        const mnemonic = generateMnemonic();
+        console.log(chalk.yellow('Mnemonic:     '), chalk.white(mnemonic));
+        return mnemonic;
     }
 
     static validate(mnemonic: string): boolean {

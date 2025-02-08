@@ -3,13 +3,11 @@ import { WalletKeys } from '../../core/interfaces';
 import * as crypto from 'crypto';
 
 export async function generateEOSKeys(seed: Buffer): Promise<WalletKeys> {
-    const hash = crypto.createHash('sha256').update(seed).digest();
-    const privateKey = ecc.PrivateKey.fromHex(hash.toString('hex'));
-    const publicKey = privateKey.toPublic();
-
+    const hash = crypto.createHash('sha256').update(seed).digest('hex');
+    const privateKey = await ecc.PrivateKey.fromHex(hash);
+    const publicKey = privateKey.toPublic().toString();
     return {
-        privateKey: hash.toString('hex'),
-        publicKey: publicKey.toString(),
-        wif: privateKey.toWif()
+        privateKey: privateKey.toWif(),
+        publicKey
     };
-} 
+}

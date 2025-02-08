@@ -8,6 +8,7 @@ export async function generateSolanaKeys(seed: Buffer, path: string): Promise<Wa
     
     return {
         privateKey: Buffer.from(keypair.secretKey).toString('hex'),
-        publicKey: keypair.publicKey.toBase58()
+        publicKey: keypair.publicKey.toBase58(),
+        address: keypair.publicKey.toBase58(),
     };
 } 

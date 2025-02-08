@@ -11,7 +11,7 @@ export async function generateKeys(mnemonic: string, network: NetworkConfig): Pr
 
     switch (network.protocol) {
         case 'bitcoin':
-            return generateBitcoinKeys(seed);
+            return generateBitcoinKeys(mnemonic);
         case 'dogecoin':
             return generateDogecoinKeys(seed);
         case 'evm':

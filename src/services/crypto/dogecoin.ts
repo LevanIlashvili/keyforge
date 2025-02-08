@@ -19,15 +19,23 @@ const DOGECOIN_NETWORK = {
 };
 
 export async function generateDogecoinKeys(seed: Buffer): Promise<WalletKeys> {
-    const hash = crypto.createHash('sha256').update(seed).digest();
-    const keyPair = ECPair.fromPrivateKey(Buffer.from(hash), { network: DOGECOIN_NETWORK });
+    // Use HMAC-SHA512 for key derivation (BIP-32 compatible)
+    const hmac = crypto.createHmac('sha512', 'Bitcoin seed');
+    const I = hmac.update(seed).digest();
+    const IL = I.slice(0, 32); // Private key is the first 32 bytes
+    
+    const keyPair = ECPair.fromPrivateKey(IL, { 
+        network: DOGECOIN_NETWORK,
+        compressed: true  // Ensure compressed public keys
+    });
+    
     const { address } = bitcoin.payments.p2pkh({ 
         pubkey: Buffer.from(keyPair.publicKey),
         network: DOGECOIN_NETWORK
     });
 
     return {
-        privateKey: hash.toString('hex'),
+        privateKey: Buffer.from(IL).toString('hex'),
         publicKey: Buffer.from(keyPair.publicKey).toString('hex'),
         wif: keyPair.toWIF(),
         address: address!
